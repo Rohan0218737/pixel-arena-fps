@@ -1,0 +1,3 @@
+# Netlify pubblica la cartella client/ così com'è: non c'è nessuna compilazione da eseguire.
+[build]
+  publish = "client"

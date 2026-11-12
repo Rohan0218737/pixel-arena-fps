@@ -1,0 +1,18 @@
+# Blueprint di Render: crea il servizio web del server di gioco partendo dalla cartella server/.
+# Uso: dashboard di Render -> New -> Blueprint -> scegli questo repository.
+#
+# Variabili d'ambiente facoltative, da aggiungere poi in Environment (vedi README):
+#   CLIENT_ORIGIN  indirizzo del sito Netlify autorizzato a collegarsi
+#   ACCESS_CODE    codice segreto per entrare nell'arena
+#   MAX_PLAYERS    numero massimo di giocatori (predefinito 12)
+services:
+  - type: web
+    name: pixel-arena-server
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit

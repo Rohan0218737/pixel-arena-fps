@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0f1724">
+  <title>Pixel Arena · FPS multiplayer</title>
+  <meta name="description" content="Sparatutto 3D multiplayer in prima persona con le facce dei compagni.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%230f1724'/%3E%3Cpath fill='%23ffd23f' d='M7 2h2v4H7zM7 10h2v4H7zM2 7h4v2H2zM10 7h4v2h-4z'/%3E%3Crect x='7' y='7' width='2' height='2' fill='%23ff5a4d'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Nessuna compilazione: le librerie stanno in vendor/ e vengono caricate come moduli. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.min.js",
+        "socket.io-client": "./vendor/socket.io.esm.min.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- ===== Interfaccia di gioco (HUD) ===== -->
+  <div id="hud" class="hidden">
+    <div id="vignette"></div>
+    <div id="damage-arrow"></div>
+    <div id="crosshair"><i></i><i></i><i></i><i></i><b></b></div>
+    <div id="hitmarker"></div>
+
+    <div id="net-info" class="panel">
+      <span id="hud-ping">offline</span>
+      <span id="hud-players">1 in arena</span>
+    </div>
+
+    <div id="score" class="panel">
+      <span class="kills"><b id="score-kills">0</b> eliminazioni</span>
+      <span class="deaths"><b id="score-deaths">0</b> morti</span>
+    </div>
+
+    <div id="killfeed"></div>
+    <div id="center-msg"></div>
+
+    <div id="health" class="panel">
+      <span class="plus">+</span>
+      <div class="bar"><div id="health-fill"></div></div>
+      <b id="health-text">100</b>
+    </div>
+
+    <div id="ammo" class="panel">
+      <b id="ammo-count">12</b>
+      <small>/ <span id="ammo-max">12</span></small>
+      <em id="ammo-hint"></em>
+    </div>
+
+    <div id="death" class="hidden">
+      <h2>Eliminato!</h2>
+      <p>Ti ha colpito <b id="death-killer"></b></p>
+      <p class="timer">Rientro tra <b id="death-timer">3</b></p>
+    </div>
+
+    <div id="scoreboard" class="hidden">
+      <h2>Classifica</h2>
+      <table>
+        <thead><tr><th>#</th><th></th><th>Giocatore</th><th>Eliminazioni</th><th>Morti</th></tr></thead>
+        <tbody id="scoreboard-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== Comandi a schermo (solo dispositivi touch) ===== -->
+  <div id="touch-ui" class="hidden">
+    <div id="touch-move"><div id="stick-base" class="hidden"><div id="stick-knob"></div></div></div>
+    <div id="touch-look"></div>
+    <button id="btn-pause" class="touch-btn small" aria-label="Pausa">II</button>
+    <button id="btn-score" class="touch-btn small" aria-label="Classifica">#</button>
+    <button id="btn-reload" class="touch-btn" aria-label="Ricarica">R</button>
+    <button id="btn-jump" class="touch-btn" aria-label="Salta">&#9650;</button>
+    <button id="btn-fire" class="touch-btn fire" aria-label="Spara">&#9679;</button>
+  </div>
+  <div id="rotate-hint">Ruota il telefono in orizzontale per giocare meglio</div>
+
+  <!-- ===== Menu iniziale ===== -->
+  <section id="menu" class="overlay">
+    <div class="card menu-card">
+      <h1 class="logo"><span>PIXEL</span> <span>ARENA</span></h1>
+      <p class="tagline">Sparatutto multiplayer privato con le facce dei compagni</p>
+
+      <label class="field" for="player-name">
+        <span>Il tuo nome</span>
+        <input id="player-name" type="text" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Come ti chiami?">
+      </label>
+
+      <div class="field">
+        <span>Scegli la tua faccia</span>
+        <div id="face-grid" role="listbox" aria-label="Facce disponibili"></div>
+      </div>
+
+      <label class="field hidden" id="code-row" for="access-code">
+        <span>Codice arena</span>
+        <input id="access-code" type="text" maxlength="64" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Codice segreto dell'arena">
+      </label>
+
+      <p id="server-status" class="status connecting"><i></i><span>Connessione al server…</span></p>
+      <p id="menu-error" class="error hidden" role="alert"></p>
+
+      <div class="actions">
+        <button id="btn-play" class="btn primary" disabled>Entra nell'arena</button>
+        <button id="btn-offline" class="btn">Prova offline</button>
+      </div>
+
+      <ul class="help desktop-only">
+        <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> muovi</li>
+        <li><kbd>Mouse</kbd> mira</li>
+        <li><kbd>Click sx</kbd> spara</li>
+        <li><kbd>Spazio</kbd> salta</li>
+        <li><kbd>Shift</kbd> corri</li>
+        <li><kbd>R</kbd> ricarica</li>
+        <li><kbd>Tab</kbd> classifica</li>
+        <li><kbd>M</kbd> audio</li>
+        <li><kbd>Esc</kbd> pausa</li>
+      </ul>
+      <ul class="help touch-only">
+        <li>Metà sinistra: levetta di movimento</li>
+        <li>Metà destra: trascina per mirare</li>
+        <li>Pulsanti: spara, salta, ricarica</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== Pausa ===== -->
+  <section id="pause" class="overlay hidden">
+    <div class="card">
+      <h2>In pausa</h2>
+      <p id="pause-hint">La partita continua: rientra quando vuoi.</p>
+      <label class="slider" for="sensitivity">
+        <span>Sensibilità visuale <b id="sensitivity-value">1.0</b></span>
+        <input id="sensitivity" type="range" min="0.2" max="3" step="0.1" value="1">
+      </label>
+      <div class="actions column">
+        <button id="btn-resume" class="btn primary">Riprendi</button>
+        <button id="btn-mute" class="btn">Audio: attivo</button>
+        <button id="btn-leave" class="btn danger">Esci al menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Connessione persa ===== -->
+  <section id="netlost" class="overlay hidden">
+    <div class="card">
+      <h2>Connessione persa</h2>
+      <p>Riconnessione al server in corso…</p>
+      <div class="actions column">
+        <button id="btn-netlost-leave" class="btn">Torna al menu</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Errore di avvio ===== -->
+  <section id="fatal" class="overlay hidden">
+    <div class="card">
+      <h2>Impossibile avviare il gioco</h2>
+      <p id="fatal-text"></p>
+    </div>
+  </section>
+
+  <noscript>
+    <section class="overlay"><div class="card"><h2>JavaScript disattivato</h2><p>Per giocare a Pixel Arena attiva JavaScript nel browser.</p></div></section>
+  </noscript>
+
+  <script>
+    // I moduli JavaScript non partono se la pagina è aperta come file locale (file://).
+    if (location.protocol === 'file:') {
+      document.getElementById('fatal-text').textContent =
+        "Apri il gioco da un indirizzo http:// o https://: con Acode usa l'anteprima integrata, su PC un piccolo server locale (vedi README).";
+      document.getElementById('fatal').classList.remove('hidden');
+      document.getElementById('menu').classList.add('hidden');
+    }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

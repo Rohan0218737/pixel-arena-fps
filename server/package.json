@@ -1,0 +1,18 @@
+{
+  "name": "pixel-arena-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Server di gioco WebSocket (Socket.io) per lo sparatutto Pixel Arena",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=20 <25"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.4"
+  }
+}
