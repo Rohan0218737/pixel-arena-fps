@@ -5,7 +5,7 @@ export const CONFIG = {
   // Indirizzo del server pubblicato su Render, senza barra finale.
   // Esempio: 'https://pixel-arena-server.onrender.com'
   // Lasciato vuoto, il gioco cerca un server avviato sullo stesso computer (porta qui sotto).
-  SERVER_URL: '',
+  SERVER_URL: 'https://pixel-arena-fps.onrender.com',
   LOCAL_SERVER_PORT: 3000,
 
   // Facce dei compagni: una foto PNG con sfondo trasparente per ciascuno, in assets/faces/.
